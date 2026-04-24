@@ -1,50 +1,59 @@
-import Course from "../models/Course.js";
 import User from "../models/User.js";
+import Course from "../models/Course.js";
 
-export const getAllUsers = async (req, res, next) => {
+// ✅ Get all users
+export const getAllUsers = async (req,res,next) => {
   try {
-    const users = await User.find().select("-password").sort({ createdAt: -1 });
+    const users = await User.find().select("-password");
     res.json(users);
-  } catch (error) {
-    next(error);
+  } catch (err) {
+  
+    next(err);
   }
 };
 
-export const deleteUser = async (req, res, next) => {
+// ✅ Delete user
+export const deleteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findById(req.params.id);
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    res.json({ message: "User deleted successfully" });
-  } catch (error) {
-    next(error);
+    await user.deleteOne();
+
+    res.json({ message: "User deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-export const getAllCoursesAdmin = async (req, res, next) => {
+// ✅ Get all courses (including drafts)
+export const getAllCoursesAdmin = async (req, res) => {
   try {
-    const courses = await Course.find()
-      .populate("instructor", "name email role")
-      .sort({ createdAt: -1 });
+    const courses = await Course.find().populate("instructor", "name");
     res.json(courses);
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
-export const deleteCourseAdmin = async (req, res, next) => {
+// ✅ Delete course
+export const deleteCourseAdmin = async (req, res) => {
   try {
-    const course = await Course.findByIdAndDelete(req.params.id);
+    const course = await Course.findById(req.params.id);
 
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" });
-    }
+    if (!course) return res.status(404).json({ message: "Course not found" });
 
-    res.json({ message: "Course deleted successfully" });
-  } catch (error) {
-    next(error);
+    await course.deleteOne();
+
+    res.json({ message: "Course deleted by admin" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
+
+
+
+
+
+
