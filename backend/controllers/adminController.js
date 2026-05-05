@@ -1,59 +1,37 @@
-import User from "../models/User.js";
-import Course from "../models/Course.js";
+import { deleteCourseAdminService, deleteUserService, getAllCoursesAdminService, getAllUsersService } from "../services/adminServices.js";
 
 // ✅ Get all users
-export const getAllUsers = async (req,res,next) => {
-  try {
-    const users = await User.find().select("-password");
+export const getAllUsers = async (req, res, next) => {
+
+    const users = await getAllUsersService();
+     next();
     res.json(users);
-  } catch (err) {
-  
-    next(err);
-  }
-};
 
+}
 // ✅ Delete user
-export const deleteUser = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    await user.deleteOne();
-
+export const deleteUser = async (req, res, next) => {
+ 
+    await deleteUserService(req.params.id);
+      next();
     res.json({ message: "User deleted" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+
 };
 
-// ✅ Get all courses (including drafts)
-export const getAllCoursesAdmin = async (req, res) => {
-  try {
-    const courses = await Course.find().populate("instructor", "name");
+// ✅ Get all courses
+ export const getAllCoursesAdmin = async (req, res, next) => {
+  
+    const courses = await getAllCoursesAdminService();
+     next()
     res.json(courses);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+
 };
 
-// ✅ Delete course
-export const deleteCourseAdmin = async (req, res) => {
-  try {
-    const course = await Course.findById(req.params.id);
-
-    if (!course) return res.status(404).json({ message: "Course not found" });
-
-    await course.deleteOne();
-
+// Delete course
+export const deleteCourseAdmin = async (req, res, next) => {
+ 
+    await deleteCourseAdminService(req.params.id);
+     next()
     res.json({ message: "Course deleted by admin" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+ 
   }
-};
-
-
-
-
-
 

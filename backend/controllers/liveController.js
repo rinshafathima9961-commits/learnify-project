@@ -1,70 +1,47 @@
-import LiveSession from "../models/LiveSetion.js";
+import { asyncHandler } from "../middleware/trycatchmiddleware.js";
+import { createLiveSessionService, endLiveSessionService, getLiveSessionsService, startLiveSessionService } from "../services/liveServices.js";
 
+
+// ✅ Create
 export const createLiveSession = async (req, res, next) => {
-  try {
-    const { course, title, scheduledAt } = req.body;
-
-    if (!course || !title) {
-      return res.status(400).json({ message: "course and title are required" });
-    }
-
-    const session = await LiveSession.create({
-      course,
-      title,
-      scheduledAt,
+  
+    const session = await createLiveSessionService({
+      ...req.body,
       instructor: req.user.id,
     });
 
     res.status(201).json(session);
-  } catch (error) {
-    next(error);
-  }
+  next()
 };
 
+// ✅ Get
 export const getLiveSessions = async (req, res, next) => {
-  try {
-    const sessions = await LiveSession.find({ course: req.params.courseId }).sort({
-      scheduledAt: 1,
+  
+    const sessions = await getLiveSessionsService(req.params.courseId);
+    res.json(sessions);
+  next()
+};
+
+// ✅ Start
+export const startLiveSession = async (req, res, next) => {
+  
+    await startLiveSessionService({
+      sessionId: req.params.id,
+      userId: req.user.id,
     });
 
-    res.json(sessions);
-  } catch (error) {
-    next(error);
-  }
+    res.json({ message: "Live session started" });
+ next()
 };
 
-export const startLiveSession = async (req, res, next) => {
-  try {
-    const session = await LiveSession.findOneAndUpdate(
-      { _id: req.params.id, instructor: req.user.id },
-      { status: "live" },
-      { new: true }
-    );
-
-    if (!session) {
-      return res.status(404).json({ message: "Live session not found" });
-    }
-
-    res.json(session);
-  } catch (error) {
-    next(error);
-  }
-};
-
+// ✅ End
 export const endLiveSession = async (req, res, next) => {
-  try {
-    const session = await LiveSession.findOneAndUpdate(
-      { _id: req.params.id, instructor: req.user.id },
-      { status: "ended" },
-      { new: true }
-    );
+  
+    await endLiveSessionService({
+      sessionId: req.params.id,
+      userId: req.user.id,
+    });
 
-    if (!session) {
-      return res.status(404).json({ message: "Live session not found" });
-    }
-
-    res.json(session);
-  } catch (error) {
-    next(error);
-  }
+    res.json({ message: "Live session ended" });
+ next()
 };

@@ -4,7 +4,9 @@ import {
   getMessages,
   markAsRead,
 } from "../controllers/chatController.js";
-import authMiddleware from "../middleware/authMiddleware.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
+
+
 
 const router = express.Router();
 

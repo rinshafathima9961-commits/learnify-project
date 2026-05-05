@@ -1,86 +1,54 @@
-import Course from "../models/Course.js";
+import { asyncHandler } from "../middleware/trycatchmiddleware.js";
+import { createCourseService, deleteCourseService, getCourseByIdService, getCoursesService, updateCourseService } from "../services/courseServices.js";
 
+
+// ✅ Create Course
 export const createCourse = async (req, res, next) => {
-  try {
-    const { title, description, price, isPublished } = req.body;
-
-    if (!title) {
-      return res.status(400).json({ message: "Course title is required" });
-    }
-
-    const course = await Course.create({
-      title,
-      description,
-      price,
-      isPublished,
+  
+    const course = await createCourseService({
+      ...req.body,
       instructor: req.user.id,
+      
     });
 
     res.status(201).json(course);
-  } catch (error) {
-    next(error);
-  }
+  next()
 };
 
+// ✅ Get all courses
 export const getCourses = async (req, res, next) => {
-  try {
-    const courses = await Course.find()
-      .populate("instructor", "name email")
-      .sort({ createdAt: -1 });
+  
+    const courses = await getCoursesService();
     res.json(courses);
-  } catch (error) {
-    next(error);
-  }
+  
+  next()
 };
 
+// ✅ Get single course
 export const getCourseById = async (req, res, next) => {
-  try {
-    const course = await Course.findById(req.params.id).populate(
-      "instructor",
-      "name email role"
-    );
-
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" });
-    }
-
+ 
+    const course = await getCourseByIdService(req.params.id);
     res.json(course);
-  } catch (error) {
-    next(error);
-  }
+  next()
 };
 
+// ✅ Update course
 export const updateCourse = async (req, res, next) => {
-  try {
-    const course = await Course.findOneAndUpdate(
-      { _id: req.params.id, instructor: req.user.id },
-      req.body,
-      { new: true, runValidators: true }
-    );
-
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" });
-    }
-
-    res.json(course);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const deleteCourse = async (req, res, next) => {
-  try {
-    const course = await Course.findOneAndDelete({
-      _id: req.params.id,
-      instructor: req.user.id,
+  
+    const updated = await updateCourseService({
+      courseId: req.params.id,
+      userId: req.user.id,
+      updates: req.body,
     });
 
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" });
-    }
+    res.json(updated);
+ next()
+};
 
-    res.json({ message: "Course deleted successfully" });
-  } catch (error) {
-    next(error);
-  }
+// ✅ Delete course
+export const deleteCourse = async (req, res, next) => {
+ 
+    await deleteCourseService(req.params.id);
+    res.json({ message: "Course deleted" });
+ next()
 };

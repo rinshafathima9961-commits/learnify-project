@@ -1,0 +1,148 @@
+import User from "../models/User.js";
+import bcrypt from "bcryptjs";
+
+import { generateOTP, getOtpExpiry, sendEmail } from "../utils/sendEmail.js";
+
+import { Otp } from "../models/Otp.js";
+
+// ✅ REGISTER
+export const registerUser = async ({ name, email, password, role }) => {
+  const existingUser = await User.findOne({ email });
+
+  if (existingUser) {
+    throw new Error("User already registered");
+  }
+
+  const otpRecord = await Otp.findOne({ email });
+
+  if (!otpRecord) {
+    throw new Error("Please verify OTP first");
+  }
+
+  if (!otpRecord.isVerified) {
+    throw new Error("OTP not verified");
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  const user = new User({
+    name: name || email.split("@")[0], // Default name to email prefix if not provided
+    email,
+    password: hashedPassword,
+    role,
+    isVerified: true,
+  });
+
+  await user.save();
+
+  // Clean up OTP record
+  await Otp.findOneAndDelete({ email });
+
+  return user;
+};
+
+// ✅ REQUEST OTP
+export const requestOtpService = async (email) => {
+  const existingUser = await User.findOne({ email, isVerified: true, password: { $exists: true } });
+
+  if (existingUser) {
+    throw new Error("User already registered");
+  }
+
+  const otp = generateOTP();
+
+  // Upsert OTP record
+  await Otp.findOneAndUpdate(
+    { email },
+    { otp, isVerified: false, expirydate: new Date() },
+    { upsert: true, new: true }
+  );
+
+  await sendEmail(email, "Your OTP Code", `Your OTP is ${otp}`);
+
+  return { message: "OTP sent successfully" };
+};
+
+// ✅ LOGIN
+export const loginUser = async ({ email, password }) => {
+  const user = await User.findOne({ email });
+
+  if (!user || !user.password) {
+    throw new Error("Invalid email or password");
+  }
+
+  if (!user.isVerified) {
+    const error = new Error("Please verify your account first");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+
+  if (!isMatch) {
+    throw new Error("Invalid email or password");
+  }
+
+  return user;
+};
+
+// ✅ VERIFY OTP
+export const verifyOtpService = async ({ email, otp }) => {
+  if (!email || !otp) {
+    throw new Error("Email and OTP are required");
+  }
+
+  const otpRecord = await Otp.findOne({ email });
+
+  if (!otpRecord) {
+    console.log(`[OTP DEBUG] No record found for email: ${email}`);
+    throw new Error("OTP request not found. Please request a new code.");
+  }
+
+  // Convert both to strings and trim to ensure clean comparison
+  const storedOtp = String(otpRecord.otp).trim();
+  const incomingOtp = String(otp).trim();
+
+  console.log(`[OTP DEBUG] Verifying for ${email}: Stored[${storedOtp}], Incoming[${incomingOtp}]`);
+
+  if (storedOtp !== incomingOtp) {
+    console.log(`[OTP DEBUG] Mismatch for ${email}`);
+    throw new Error("Invalid OTP");
+  }
+
+  // 3 minute expiry check
+  const currentTime = Date.now();
+  const timeDifference = currentTime - otpRecord.expirydate.getTime();
+
+  if (timeDifference > 3 * 60 * 1000) {
+    console.log(`[OTP DEBUG] OTP expired for ${email}`);
+    await Otp.findOneAndDelete({ email });
+    throw new Error("OTP expired");
+  }
+
+  otpRecord.isVerified = true;
+  await otpRecord.save();
+
+  console.log(`[OTP DEBUG] Verification successful for ${email}`);
+  return { message: "OTP verified successfully" };
+};
+
+// ✅ RESEND OTP
+export const resendOtpService = async (email) => {
+  const otpRecord = await Otp.findOne({ email });
+
+  if (!otpRecord) throw new Error("OTP request not found. Please request a new code.");
+
+  const otp = generateOTP();
+
+  otpRecord.otp = otp;
+  otpRecord.expirydate = new Date();
+  otpRecord.isVerified = false;
+
+  await otpRecord.save();
+
+  await sendEmail(email, "New OTP", `Your OTP is ${otp}`);
+
+  return { message: "OTP resent successfully" };
+};

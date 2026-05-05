@@ -1,53 +1,43 @@
-import Message from "../models/message.js";
+import { asyncHandler } from "../middleware/trycatchmiddleware.js";
+import { getMessagesService, markAsReadService, sendMessageService } from "../services/chatServices.js";
 
+
+// ✅ Send message
 export const sendMessage = async (req, res, next) => {
-  try {
-    const { receiver, content } = req.body;
+  
+    const { receiver, message } = req.body;
 
-    if (!receiver || !content) {
-      return res.status(400).json({ message: "receiver and content are required" });
-    }
-
-    const message = await Message.create({
+    const newMessage = await sendMessageService({
       sender: req.user.id,
       receiver,
-      content,
+      message,
     });
 
-    res.status(201).json(message);
-  } catch (error) {
-    next(error);
-  }
+    res.status(201).json(newMessage);
+  next()
 };
 
+// ✅ Get conversation
 export const getMessages = async (req, res, next) => {
-  try {
-    const { userId } = req.params;
+  
+    const messages = await getMessagesService({
+      userId: req.params.userId,
+      currentUserId: req.user.id,
+    });
 
-    const messages = await Message.find({
-      $or: [
-        { sender: req.user.id, receiver: userId },
-        { sender: userId, receiver: req.user.id },
-      ],
-    }).sort({ createdAt: 1 });
-
-    res.json(messages);
-  } catch (error) {
-    next(error);
-  }
+    res.json(messages); // 🔥 FIX: you missed this
+   next()
 };
 
+// ✅ Mark messages as read
 export const markAsRead = async (req, res, next) => {
-  try {
-    const { userId } = req.params;
-
-    await Message.updateMany(
-      { sender: userId, receiver: req.user.id, read: false },
-      { $set: { read: true } }
-    );
+  
+    await markAsReadService({
+      currentUserId: req.user.id,
+      userId: req.params.userId,
+    });
 
     res.json({ message: "Messages marked as read" });
-  } catch (error) {
-    next(error);
-  }
+    next()
 };
+

@@ -1,9 +1,14 @@
 const errorMiddleware = (err, req, res, next) => {
-  console.error(err.stack);
+  const statusCode = err.statusCode||500;
 
-  res.status(err.status || 500).json({
+  res.status(statusCode).json({
     message: err.message || 'Server Error',
   });
 };
 
 export default errorMiddleware;
+
+
+
+
+

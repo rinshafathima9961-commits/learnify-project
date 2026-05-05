@@ -5,29 +5,40 @@ const courseSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
-      trim: true,
     },
-    description: {
-      type: String,
-      default: "",
-    },
+
+    description: String,
+
     price: {
       type: Number,
       default: 0,
     },
+    category:{
+        type:String,
+    },
+
     instructor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
     },
-    isPublished: {
-      type: Boolean,
-      default: false,
+
+    thumbnail: String,
+
+    lessons: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Lesson",
+      },
+    ],
+
+    studentsEnrolled: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }
 );
 
-const Course = mongoose.models.Course || mongoose.model("Course", courseSchema);
+export const Course= mongoose.model("Course", courseSchema);
 
-export default Course;
+

@@ -14,7 +14,7 @@ import liveRoutes from "./routes/liveRoutes.js"
 
 //middleware
 import errorMiddleware from "./middleware/errorMiddleware.js"
-import authMiddleware from "./middleware/authMiddleware.js"
+
 import roleMiddleware from "./middleware/roleMiddleware.js"
 
 
@@ -22,10 +22,17 @@ console.log('server.js loaded');
 const app = express();
 
 console.log('connectDB function:', connectDB);
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 connectDB(env.MONGO_URL);
 
-app.use(cors())
+app.use(cors({ 
+    origin: "http://localhost:5173",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}))
 app.use(express.json())
+
 
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
@@ -40,3 +47,4 @@ const PORT =process.env.PORT || 5000;
 app.listen(PORT,()=>{
     console.log(`Server running on port ${PORT}`)
 })
+

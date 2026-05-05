@@ -1,0 +1,73 @@
+import { LiveSession } from "../models/LiveSetion.js";
+
+
+// create
+export const createLiveSessionService = async ({
+  course,
+  instructor,
+  title,
+  startTime,
+  meetingLink,
+}) => {
+  return await LiveSession.create({
+    course,
+    instructor,
+    title,
+    startTime,
+    meetingLink,
+  });
+};
+
+// get sessions
+export const getLiveSessionsService = async (courseId) => {
+  return await LiveSession.find({ course: courseId })
+    .populate("instructor", "name");
+};
+
+// start session
+export const startLiveSessionService = async ({ sessionId, userId }) => {
+  const session = await LiveSession.findById(sessionId);
+
+  if (!session) {
+    throw new Error("Session not found");
+  }
+
+  if (session.instructor.toString() !== userId) {
+    const err = new Error("Not authorized");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (session.isLive) {
+    throw new Error("Session already live");
+  }
+
+  session.isLive = true;
+  await session.save();
+
+  return true;
+};
+
+// end session
+export const endLiveSessionService = async ({ sessionId, userId }) => {
+  const session = await LiveSession.findById(sessionId);
+
+  if (!session) {
+    throw new Error("Session not found");
+  }
+
+  if (session.instructor.toString() !== userId) {
+    const err = new Error("Not authorized");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (!session.isLive) {
+    throw new Error("Session is not live");
+  }
+
+  session.isLive = false;
+  await session.save();
+
+  return true;
+};
