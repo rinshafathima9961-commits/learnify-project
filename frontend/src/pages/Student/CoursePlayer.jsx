@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
+import { fetchCourseById as fetchCourseThunk } from '../../features/courses/courseThunk';
 import { 
   Play, 
   CheckCircle2, 
@@ -14,33 +17,50 @@ import {
   Volume2,
   Clock,
   BookOpen,
-  FileText
+  FileText,
+  Loader2
 } from 'lucide-react';
 
 const CoursePlayer = () => {
-  const [currentLesson, setCurrentLesson] = useState(1);
-  const [expandedModule, setExpandedModule] = useState(1);
+  const { id } = useParams();
+  const dispatch = useDispatch();
+  const { selectedCourse, loading, error } = useSelector((state) => state.courses);
+  
+  const [currentLesson, setCurrentLesson] = useState(null);
+  const [expandedModule, setExpandedModule] = useState(0);
 
+  useEffect(() => {
+    dispatch(fetchCourseThunk(id));
+  }, [dispatch, id]);
+
+  useEffect(() => {
+    if (selectedCourse?.lessons?.length > 0 && !currentLesson) {
+      setCurrentLesson(selectedCourse.lessons[0]);
+    }
+  }, [selectedCourse, currentLesson]);
+
+  if (loading && !selectedCourse) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 bg-white rounded-[2.5rem]">
+        <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+        <p className="text-slate-500 font-medium">Loading your classroom...</p>
+      </div>
+    );
+  }
+
+  // Group lessons into modules (for now, we'll treat all lessons as one module if not structured)
   const modules = [
     {
       id: 1,
-      title: 'Module 1: Getting Started with React 19',
-      duration: '1h 45m',
-      lessons: [
-        { id: 1, title: 'Introduction to React 19 Features', duration: '12:45', status: 'completed' },
-        { id: 2, title: 'Setting Up Your Environment', duration: '08:30', status: 'current' },
-        { id: 3, title: 'Understanding JSX & Components', duration: '15:20', status: 'pending' },
-      ]
-    },
-    {
-      id: 2,
-      title: 'Module 2: Advanced State Management',
-      duration: '2h 30m',
-      lessons: [
-        { id: 4, title: 'The new useActionState Hook', duration: '18:10', status: 'locked' },
-        { id: 5, title: 'Optimizing Context with useMemo', duration: '22:45', status: 'locked' },
-        { id: 6, title: 'Building Custom Middleware', duration: '35:00', status: 'locked' },
-      ]
+      title: 'Course Content',
+      duration: selectedCourse?.duration || 'Unknown',
+      lessons: selectedCourse?.lessons?.map((l, idx) => ({
+        id: l._id || idx,
+        title: l.title,
+        duration: l.duration || '00:00',
+        status: currentLesson?._id === l._id ? 'current' : 'pending',
+        videoUrl: l.videoUrl
+      })) || []
     }
   ];
 
@@ -49,10 +69,10 @@ const CoursePlayer = () => {
       {/* Video Area */}
       <div className="flex-1 flex flex-col bg-slate-900 overflow-hidden">
         <div className="flex-1 relative group bg-black flex items-center justify-center">
-          {/* Main Video Overlay (Placeholder) */}
+          {/* Main Video Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 opacity-0 group-hover:opacity-100 transition-all z-10 p-8 flex flex-col justify-between">
             <div className="flex justify-between items-center">
-              <h2 className="text-white font-bold">L1: Introduction to React 19 Features</h2>
+              <h2 className="text-white font-bold">{currentLesson?.title || 'Select a lesson'}</h2>
               <button className="p-2 bg-white/20 backdrop-blur-md rounded-xl text-white hover:bg-white/30 transition-all">
                 <Settings size={20} />
               </button>
@@ -64,9 +84,9 @@ const CoursePlayer = () => {
                   <Play size={24} fill="currentColor" />
                 </button>
                 <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-600 w-1/3"></div>
+                  <div className="h-full bg-blue-600 w-0"></div>
                 </div>
-                <span className="text-xs font-bold">12:45 / 45:00</span>
+                <span className="text-xs font-bold">00:00 / {currentLesson?.duration || '00:00'}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex gap-4">
@@ -76,7 +96,11 @@ const CoursePlayer = () => {
               </div>
             </div>
           </div>
-          <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=1200&q=80" className="w-full h-full object-cover opacity-40" alt="Video Placeholder" />
+          <img 
+            src={selectedCourse?.thumbnail || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=1200&q=80"} 
+            className="w-full h-full object-cover opacity-40" 
+            alt="Video Placeholder" 
+          />
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-2xl animate-pulse">
               <Play size={40} fill="currentColor" className="ml-1" />
@@ -88,22 +112,36 @@ const CoursePlayer = () => {
         <div className="bg-white p-8 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-4 flex-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-900">1.2 Setting Up Your Environment</h1>
+              <h1 className="text-2xl font-bold text-slate-900">{currentLesson?.title}</h1>
               <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-blue-100">Now Playing</span>
             </div>
             <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-slate-500">
-              <span className="flex items-center gap-1.5"><Clock size={16} /> 08:30 Remaining</span>
-              <span className="flex items-center gap-1.5"><BookOpen size={16} /> Module 1</span>
+              <span className="flex items-center gap-1.5"><Clock size={16} /> {currentLesson?.duration} Duration</span>
+              <span className="flex items-center gap-1.5"><BookOpen size={16} /> {selectedCourse?.title}</span>
               <button className="text-blue-600 font-bold hover:underline flex items-center gap-1.5">
-                <Download size={16} /> Resources (2)
+                <Download size={16} /> Resources (0)
               </button>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button className="px-6 py-3 bg-slate-50 text-slate-500 rounded-2xl font-bold text-sm hover:bg-slate-100 transition-all flex items-center gap-2 border border-slate-100">
+            <button 
+              onClick={() => {
+                const idx = selectedCourse?.lessons?.findIndex(l => l._id === currentLesson?._id);
+                if (idx > 0) setCurrentLesson(selectedCourse.lessons[idx - 1]);
+              }}
+              disabled={!selectedCourse?.lessons || selectedCourse.lessons.indexOf(currentLesson) === 0}
+              className="px-6 py-3 bg-slate-50 text-slate-500 rounded-2xl font-bold text-sm hover:bg-slate-100 disabled:opacity-50 transition-all flex items-center gap-2 border border-slate-100"
+            >
               <ChevronLeft size={18} /> Previous
             </button>
-            <button className="px-8 py-3 bg-blue-600 text-white rounded-2xl font-bold text-sm hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center gap-2">
+            <button 
+              onClick={() => {
+                const idx = selectedCourse?.lessons?.findIndex(l => l._id === currentLesson?._id);
+                if (idx < selectedCourse.lessons.length - 1) setCurrentLesson(selectedCourse.lessons[idx + 1]);
+              }}
+              disabled={!selectedCourse?.lessons || selectedCourse.lessons.indexOf(currentLesson) === selectedCourse.lessons.length - 1}
+              className="px-8 py-3 bg-blue-600 text-white rounded-2xl font-bold text-sm hover:bg-blue-700 disabled:opacity-50 transition-all shadow-xl shadow-blue-100 flex items-center gap-2"
+            >
               Next Lesson <ChevronRight size={18} />
             </button>
           </div>
@@ -147,18 +185,26 @@ const CoursePlayer = () => {
                   {module.lessons.map((lesson) => (
                     <div 
                       key={lesson.id} 
+                      onClick={() => {
+                        const realLesson = selectedCourse.lessons.find(l => l._id === (lesson.id === lesson.title ? l.title : lesson.id)); 
+                        // Wait, lesson.id is l._id or idx.
+                        const target = selectedCourse.lessons.find(l => l._id === lesson.id);
+                        if (target) setCurrentLesson(target);
+                      }}
                       className={`p-4 pl-12 flex items-center gap-4 cursor-pointer hover:bg-blue-50/50 transition-all relative ${
-                        lesson.status === 'current' ? 'bg-blue-50 border-r-4 border-blue-600' : ''
+                        currentLesson?._id === lesson.id ? 'bg-blue-50 border-r-4 border-blue-600' : ''
                       }`}
                     >
                       {lesson.status === 'completed' && <CheckCircle2 size={18} className="text-green-500" />}
-                      {lesson.status === 'current' && <Play size={18} className="text-blue-600 fill-blue-600" />}
-                      {lesson.status === 'pending' && <div className="w-[18px] h-[18px] rounded-full border-2 border-slate-300"></div>}
-                      {lesson.status === 'locked' && <Lock size={18} className="text-slate-400" />}
+                      {currentLesson?._id === lesson.id ? (
+                        <Play size={18} className="text-blue-600 fill-blue-600" />
+                      ) : (
+                        <div className="w-[18px] h-[18px] rounded-full border-2 border-slate-300"></div>
+                      )}
                       
                       <div className="flex-1 min-w-0">
                         <p className={`text-xs font-bold truncate ${
-                          lesson.status === 'locked' ? 'text-slate-400' : 'text-slate-700'
+                          currentLesson?._id === lesson.id ? 'text-blue-600' : 'text-slate-700'
                         }`}>
                           {lesson.title}
                         </p>

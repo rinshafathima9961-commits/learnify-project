@@ -74,8 +74,8 @@ function InstructorRegister() {
           role: "instructor",
         })).unwrap();
 
-        alert("Instructor Registration successful! Welcome to the academy.");
-        navigate("/instructor/dashboard");
+        alert("Instructor Registration successful! Please complete your verification.");
+        navigate("/instructor/verify");
       } catch (err) {
         setError(err.response?.data?.message || "Registration failed. Please try again.");
       }
@@ -105,7 +105,7 @@ function InstructorRegister() {
       setTimer(30); // start 30 sec timer
       setError("");
     } catch (err) {
-      setError(err?.message || "Failed to send verification code. Please check your email.");
+      setError(err || "Failed to send verification code. Please check your email.");
     }
   };
 

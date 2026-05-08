@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchStudentDashboard } from '../../features/student/studentThunk';
 import { 
   MoreVertical, 
   PlayCircle, 
@@ -6,68 +8,89 @@ import {
   MessageCircle, 
   Star,
   Users,
-  ChevronRight,
   ShieldCheck,
-  Clock,
-  BookOpen
+  BookOpen,
+  Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const StudentCourses = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { dashboardData, loading, error } = useSelector((state) => state.student);
 
-  const instructors = [
-    {
-      id: 1,
-      name: 'Dr. Angela Yu',
-      avatar: 'https://i.pravatar.cc/150?u=angela',
-      expertise: 'Senior Full Stack Developer',
-      rating: 4.9,
-      students: '150k+',
-      courses: [
-        {
-          id: 101,
-          title: 'Complete Web Development Bootcamp 2026',
-          thumbnail: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80',
-          progress: 85,
-          completedLessons: 42,
-          totalLessons: 50,
-          nextLesson: 'Deploying with Docker & Kubernetes',
-          certificate: 'Locked',
-        },
-        {
-          id: 102,
-          title: 'Python for Data Science Specialization',
-          thumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80',
-          progress: 20,
-          completedLessons: 5,
-          totalLessons: 25,
-          nextLesson: 'Pandas DataFrames Deep Dive',
-          certificate: 'Locked',
-        }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Michael Scott',
-      avatar: 'https://i.pravatar.cc/150?u=michael',
-      expertise: 'UI/UX Design Expert',
-      rating: 4.8,
-      students: '85k+',
-      courses: [
-        {
-          id: 201,
-          title: 'Advanced UI/UX Masterclass',
-          thumbnail: 'https://images.unsplash.com/photo-1586717791821-3f44a563eb4c?auto=format&fit=crop&w=600&q=80',
-          progress: 100,
-          completedLessons: 30,
-          totalLessons: 30,
-          nextLesson: 'All Lessons Completed',
-          certificate: 'Earned',
-        }
-      ]
+  useEffect(() => {
+    if (!dashboardData) {
+      dispatch(fetchStudentDashboard());
     }
-  ];
+  }, [dispatch, dashboardData]);
+
+  // Group enrollments by instructor
+  const enrolledCourses = dashboardData?.enrolledCourses;
+  const groupedInstructors = Array.isArray(enrolledCourses) ? enrolledCourses.reduce((acc, enrollment) => {
+    const course = enrollment.course;
+    if (!course) return acc;
+    
+    const instructor = course.instructor;
+    const instructorId = instructor?._id || 'unknown';
+    
+    if (!acc[instructorId]) {
+      acc[instructorId] = {
+        id: instructorId,
+        name: instructor?.name || 'Learnify Instructor',
+        avatar: instructor?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(instructor?.name || 'Instructor')}&background=2563eb&color=fff`,
+        expertise: instructor?.verificationDetails?.expertise || 'Certified Instructor',
+        rating: 4.9,
+        students: instructor?.studentsCount || 0,
+        courses: []
+      };
+    }
+    
+    acc[instructorId].courses.push({
+      id: enrollment._id,
+      courseId: course._id,
+      title: course.title,
+      thumbnail: course.thumbnail,
+      progress: enrollment.progress || 0,
+      completedLessons: enrollment.completedLessons || 0,
+      totalLessons: course.lessonsCount || course.lessons?.length || 0,
+      nextLesson: enrollment.nextLesson || 'Start Learning',
+      status: enrollment.status || 'Active',
+    });
+    
+    return acc;
+  }, {}) : {};
+
+  const instructors = Object.values(groupedInstructors);
+
+  if (loading && !dashboardData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+        <p className="text-slate-500 font-medium">Fetching your learning journey...</p>
+      </div>
+    );
+  }
+
+  if (instructors.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 text-center">
+        <div className="w-24 h-24 bg-blue-50 rounded-[2rem] flex items-center justify-center text-blue-600">
+          <BookOpen size={48} />
+        </div>
+        <div className="max-w-md space-y-2">
+          <h3 className="text-2xl font-bold text-slate-900">No Enrolled Courses</h3>
+          <p className="text-slate-500">You haven't enrolled in any courses yet. Explore our catalog to find your next passion.</p>
+        </div>
+        <button 
+          onClick={() => navigate('/student/buy-courses')}
+          className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-200 transition-all hover:bg-blue-700 active:scale-95"
+        >
+          Explore Courses
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10">
@@ -189,4 +212,4 @@ const StudentCourses = () => {
   );
 };
 
-export default StudentCourses;
+export default StudentCourses; 

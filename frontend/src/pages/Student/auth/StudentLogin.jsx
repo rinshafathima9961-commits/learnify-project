@@ -55,7 +55,7 @@ function Login() {
         }
 
         alert("Welcome back!");
-        navigate("/student/dashboard");z
+        navigate("/student/dashboard");
       } catch (err) {
         if (err.response) {
           setApiError(err.response.data.message || "Invalid credentials");
@@ -224,26 +224,40 @@ function Login() {
             </div>
           </div>
 
-<div className="grid grid-cols-2 gap-4">
-             <GoogleLogin
-  onSuccess={async (response) => {
-    const token = response.credential;
+<div className="flex justify-center">
+  <GoogleLogin
+    onSuccess={async (response) => {
+      const token = response.credential;
 
-    try {
-      const res = await axiosInstance.post("/auth/google", { token });
+      try {
+        const res = await axiosInstance.post("/auth/google", {
+          token,
+          role: "student", // ✅ VERY IMPORTANT
+        });
 
-      dispatch(setCredentials(res.data));
-      navigate("/student/dashboard");
+        const user = res.data;
 
-    } catch (error) {
-      console.log("Backend error", error);
-    }
-  }}
-  onError={() => {
-    console.log("Google Login Failed");
-  }}
-/>
-            </div>
+        // ✅ role protection
+        if (user.role !== "student") {
+          alert("Access denied. Use correct portal.");
+          return;
+        }
+
+        // ✅ save to redux
+        dispatch(setCredentials(user));
+
+        // ✅ redirect
+        navigate("/student/dashboard");
+
+      } catch (error) {
+        console.log("Google login error", error);
+      }
+    }}
+    onError={() => {
+      console.log("Google Login Failed");
+    }}
+  />
+</div>
 
           <div className="text-center mt-10">
             <p className="text-sm text-slate-500">

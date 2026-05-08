@@ -4,6 +4,8 @@ import {
   loginAPI,
   verifyOtpAPI,
   resendOtpAPI,
+  getProfileAPI,
+  updateProfileAPI,
 } from "./authAPI";
 
 // Register
@@ -13,9 +15,7 @@ export const registerUser = createAsyncThunk(
     try {
       return await registerAPI(data);
     } catch (error) {
-      return thunkAPI.rejectWithValue(
-        error.response?.data || "Registration failed"
-      );
+      return thunkAPI.rejectWithValue(error.response?.data?.message || "Registration failed");
     }
   }
 );
@@ -26,17 +26,11 @@ export const loginUser = createAsyncThunk(
   async (data, thunkAPI) => {
     try {
       const res = await loginAPI(data);
-
-      if (res.token) {
-        localStorage.setItem("token", res.token);
-      }
+      if (res.token) localStorage.setItem("token", res.token);
       localStorage.setItem("user", JSON.stringify(res));
-
       return res;
     } catch (error) {
-      return thunkAPI.rejectWithValue(
-        error.response?.data || "Login failed"
-      );
+      return thunkAPI.rejectWithValue(error.response?.data?.message || "Login failed");
     }
   }
 );
@@ -48,9 +42,7 @@ export const verifyOtp = createAsyncThunk(
     try {
       return await verifyOtpAPI(data);
     } catch (error) {
-      return thunkAPI.rejectWithValue(
-        error.response?.data || "OTP verification failed"
-      );
+      return thunkAPI.rejectWithValue(error.response?.data?.message || "OTP verification failed");
     }
   }
 );
@@ -62,9 +54,35 @@ export const resendOtp = createAsyncThunk(
     try {
       return await resendOtpAPI(email);
     } catch (error) {
-      return thunkAPI.rejectWithValue(
-        error.response?.data || "Resend OTP failed"
-      );
+      return thunkAPI.rejectWithValue(error.response?.data?.message || "Resend OTP failed");
+    }
+  }
+);
+
+// Fetch Profile
+export const fetchProfile = createAsyncThunk(
+  "auth/fetchProfile",
+  async (_, thunkAPI) => {
+    try {
+      const res = await getProfileAPI();
+      localStorage.setItem("user", JSON.stringify(res));
+      return res;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data?.message || "Failed to fetch profile");
+    }
+  }
+);
+
+// Update Profile
+export const updateProfile = createAsyncThunk(
+  "auth/updateProfile",
+  async (profileData, thunkAPI) => {
+    try {
+      const res = await updateProfileAPI(profileData);
+      localStorage.setItem("user", JSON.stringify(res));
+      return res;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data?.message || "Profile update failed");
     }
   }
 );

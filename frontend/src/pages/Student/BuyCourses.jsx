@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllCourses, enrollInCourse } from '../../features/courses/courseThunk';
 import { 
   Star, 
   Users, 
@@ -11,73 +13,103 @@ import {
   X,
   CreditCard,
   ChevronRight,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const BuyCourses = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { courses, loading, error } = useSelector((state) => state.courses);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const availableInstructors = [
-    {
-      id: 1,
-      name: 'Dr. Angela Yu',
-      avatar: 'https://i.pravatar.cc/150?u=angela',
-      expertise: 'Senior Full Stack Developer',
-      rating: 4.9,
-      students: '150k+',
-      courses: [
-        {
-          id: 301,
-          title: 'The Complete 2026 Web Development Bootcamp',
-          thumbnail: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80',
-          price: '₹2,499',
-          rating: 4.9,
-          duration: '65h 30m',
-          lessons: 480,
-          liveClasses: true,
-          exams: true,
-        },
-        {
-          id: 302,
-          title: 'iOS & Swift Deep Dive - From Zero to App Store',
-          thumbnail: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=600&q=80',
-          price: '₹3,299',
-          rating: 4.8,
-          duration: '52h 15m',
-          lessons: 320,
-          liveClasses: true,
-          exams: false,
-        }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Sarah Jenkins',
-      avatar: 'https://i.pravatar.cc/150?u=sarah',
-      expertise: 'Data Science & AI Researcher',
-      rating: 4.7,
-      students: '92k+',
-      courses: [
-        {
-          id: 401,
-          title: 'Machine Learning A-Z™: AI, Python & R',
-          thumbnail: 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&w=600&q=80',
-          price: '₹1,999',
-          rating: 4.7,
-          duration: '45h 00m',
-          lessons: 280,
-          liveClasses: false,
-          exams: true,
-        }
-      ]
+  useEffect(() => {
+    dispatch(fetchAllCourses());
+  }, [dispatch]);
+
+  const handleEnrollment = async () => {
+    setIsProcessing(true);
+    try {
+      await dispatch(enrollInCourse(selectedCourse._id)).unwrap();
+      alert('Congratulations! You have successfully enrolled in the course.');
+      setShowPayment(false);
+      navigate('/student/courses');
+    } catch (err) {
+      alert(err || 'Failed to enroll in the course. Please try again.');
+    } finally {
+      setIsProcessing(false);
     }
-  ];
+  };
+
+  // Group courses by instructor for the current UI design
+  const instructors = Array.isArray(courses) ? courses.reduce((acc, course) => {
+    const instructorId = course.instructor?._id;
+    if (!instructorId) return acc;
+    
+    if (!acc[instructorId]) {
+      acc[instructorId] = {
+        id: instructorId,
+        name: course.instructor?.name || 'Expert Instructor',
+        avatar: course.instructor?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(course.instructor?.name || 'I')}&background=2563eb&color=fff`,
+        expertise: course.instructor?.verificationDetails?.expertise || 'Certified Instructor',
+        rating: 4.9, 
+        students: course.instructor?.studentsCount || 0,
+        courses: []
+      };
+    }
+    acc[instructorId].courses.push(course);
+    return acc;
+  }, {}) : {};
+
+  const availableInstructors = Object.values(instructors);
 
   const handleBuyClick = (course, instructor) => {
     setSelectedCourse({ ...course, instructorName: instructor.name });
     setShowPayment(true);
   };
+
+  if (loading && courses.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+        <p className="text-slate-500 font-medium">Loading amazing courses for you...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <div className="bg-red-50 p-6 rounded-3xl border border-red-100 text-center">
+          <p className="text-red-600 font-bold">Error loading courses</p>
+          <p className="text-red-500 text-sm mt-1">{error}</p>
+          <button 
+            onClick={() => dispatch(fetchAllCourses())}
+            className="mt-4 px-6 py-2 bg-red-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-200"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (courses.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <div className="bg-slate-50 p-10 rounded-[3rem] border border-slate-200 text-center max-w-md">
+          <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-slate-200">
+            <BookOpen size={40} className="text-blue-600" />
+          </div>
+          <h3 className="text-2xl font-bold text-slate-900">No Courses Found</h3>
+          <p className="text-slate-500 mt-2">We couldn't find any courses matching your criteria. Check back later!</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-12 pb-20">
@@ -130,11 +162,11 @@ const BuyCourses = () => {
           {/* Courses Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {instructor.courses.map((course) => (
-              <div key={course.id} className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-2xl hover:border-blue-300 transition-all group flex flex-col">
+              <div key={course._id} className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-2xl hover:border-blue-300 transition-all group flex flex-col">
                 <div className="relative aspect-video overflow-hidden">
                   <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-xl font-black text-blue-600 shadow-lg text-lg">
-                    {course.price}
+                    ₹{course.price?.toLocaleString()}
                   </div>
                 </div>
                 <div className="p-6 space-y-6 flex-1 flex flex-col">
@@ -144,30 +176,30 @@ const BuyCourses = () => {
                     </h4>
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
                       <Star size={14} className="text-yellow-400 fill-yellow-400" />
-                      <span>{course.rating} (12k reviews)</span>
+                      <span>{course.rating || 4.5}</span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex items-center gap-2 text-slate-500">
                       <Clock size={16} className="text-slate-400" />
-                      <span className="text-xs font-medium">{course.duration}</span>
+                      <span className="text-xs font-medium">{course.duration || '0h'}</span>
                     </div>
                     <div className="flex items-center gap-2 text-slate-500">
                       <BookOpen size={16} className="text-slate-400" />
-                      <span className="text-xs font-medium">{course.lessons} Lessons</span>
+                      <span className="text-xs font-medium">{course.lessonsCount || course.lessons?.length || 0} Lessons</span>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2 pt-2">
-                    {course.liveClasses && (
-                      <span className="px-2.5 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg border border-red-100 flex items-center gap-1">
-                        <Video size={10} /> LIVE CLASS
+                    {course.category && (
+                      <span className="px-2.5 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-lg border border-blue-100 flex items-center gap-1">
+                        {course.category.toUpperCase()}
                       </span>
                     )}
-                    {course.exams && (
+                    {course.level && (
                       <span className="px-2.5 py-1 bg-purple-50 text-purple-600 text-[10px] font-bold rounded-lg border border-purple-100 flex items-center gap-1">
-                        <FileText size={10} /> EXAMS
+                        {course.level.toUpperCase()}
                       </span>
                     )}
                   </div>
@@ -200,7 +232,7 @@ const BuyCourses = () => {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-slate-900">Secure Checkout</h3>
-                  <p className="text-slate-500 text-sm">Order ID: #LRN-99231</p>
+                  <p className="text-slate-500 text-sm">Order ID: #LRN-{Math.floor(10000 + Math.random() * 90000)}</p>
                 </div>
               </div>
               <button onClick={() => setShowPayment(false)} className="p-2 hover:bg-slate-200 rounded-full transition-all">
@@ -226,7 +258,7 @@ const BuyCourses = () => {
                   <div className="pt-4 border-t border-slate-200 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">Course Amount</span>
-                      <span className="font-bold text-slate-900">{selectedCourse.price}</span>
+                      <span className="font-bold text-slate-900">₹{selectedCourse.price?.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">Platform Fee (GST)</span>
@@ -235,7 +267,7 @@ const BuyCourses = () => {
                     <div className="flex justify-between text-lg pt-2 border-t border-slate-200 border-dashed">
                       <span className="font-bold text-slate-900">Total Payable</span>
                       <span className="font-black text-blue-600">
-                        ₹{parseInt(selectedCourse.price.replace(/[₹,]/g, '')) + 99}
+                        ₹{(selectedCourse.price + 99).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -267,14 +299,25 @@ const BuyCourses = () => {
 
             <div className="p-8 bg-slate-50 border-t border-slate-100">
               <button 
-                className="w-full py-5 bg-blue-600 text-white rounded-2xl font-bold text-lg hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
-                onClick={() => {
-                  alert('Payment Successful!');
-                  setShowPayment(false);
-                }}
+                className={`w-full py-5 rounded-2xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-3 active:scale-[0.98] ${
+                  isProcessing 
+                    ? 'bg-slate-400 text-slate-100 cursor-not-allowed' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
+                }`}
+                onClick={handleEnrollment}
+                disabled={isProcessing}
               >
-                Confirm & Pay Now
-                <ChevronRight size={20} />
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Confirm & Pay Now
+                    <ChevronRight size={20} />
+                  </>
+                )}
               </button>
             </div>
           </div>

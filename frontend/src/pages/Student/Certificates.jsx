@@ -20,7 +20,7 @@ const Certificates = () => {
       instructorName: 'Michael Scott',
       date: 'May 05, 2026',
       grade: 'A+',
-      image: 'https://images.unsplash.com/photo-1586717791821-3f44a563eb4c?auto=format&fit=crop&w=600&q=80',
+      image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=600&q=80',
     },
     {
       id: 'CERT-99281',

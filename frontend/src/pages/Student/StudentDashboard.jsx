@@ -1,190 +1,273 @@
-import React from 'react';
-import { 
-  CheckCircle2, 
-  Clock, 
-  PlayCircle, 
-  FileText, 
-  Award, 
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchStudentDashboard } from "../../features/student/studentThunk";
+import {
+  CheckCircle2,
+  Clock,
+  PlayCircle,
+  FileText,
+  Award,
   ChevronRight,
   ArrowRight,
-  MessageSquare
-} from 'lucide-react';
+  Loader2,
+} from "lucide-react";
 
 const StudentDashboard = () => {
-  const summaryCards = [
-    { label: 'Courses Completed', value: '12', icon: <CheckCircle2 className="text-green-600" />, bg: 'bg-green-50' },
-    { label: 'Courses Pending', value: '04', icon: <Clock className="text-yellow-600" />, bg: 'bg-yellow-50' },
-    { label: 'Live Classes', value: '28', icon: <PlayCircle className="text-blue-600" />, bg: 'bg-blue-50' },
-    { label: 'Upcoming Reviews', value: '02', icon: <FileText className="text-purple-600" />, bg: 'bg-purple-50' },
-    { label: 'Certificates Earned', value: '08', icon: <Award className="text-indigo-600" />, bg: 'bg-indigo-50' },
-  ];
+  const dispatch = useDispatch();
+  const { dashboardData, loading, error } = useSelector((state) => state.student);
 
-  const continueLearning = [
-    { 
-      id: 1, 
-      title: 'Advanced React Patterns', 
-      instructor: 'Sarah Jenkins', 
-      progress: 65, 
-      lessons: '12/18', 
-      image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=600&q=80' 
+  // Fetch Dashboard Data
+  useEffect(() => {
+    dispatch(fetchStudentDashboard());
+  }, [dispatch]);
+
+  // Loading State
+  if (loading && !dashboardData) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+        <p className="text-slate-500 font-medium">Preparing your personalized dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
+        <div className="bg-red-50 p-8 rounded-[2.5rem] border border-red-100 max-w-md">
+          <p className="text-red-600 font-bold text-xl">Oops! Something went wrong</p>
+          <p className="text-red-500 mt-2">{error}</p>
+          <button 
+            onClick={() => dispatch(fetchStudentDashboard())}
+            className="mt-6 px-8 py-3 bg-red-600 text-white rounded-2xl font-bold shadow-lg shadow-red-200"
+          >
+            Retry Fetching
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Summary Cards
+  const summaryCards = [
+    {
+      label: "Courses Completed",
+      value: dashboardData?.completedCourses || 0,
+      icon: <CheckCircle2 className="text-green-600" />,
+      bg: "bg-green-50",
     },
-    { 
-      id: 2, 
-      title: 'UI/UX Design Masterclass', 
-      instructor: 'Michael Scott', 
-      progress: 32, 
-      lessons: '08/25', 
-      image: 'https://images.unsplash.com/photo-1586717791821-3f44a563eb4c?auto=format&fit=crop&w=600&q=80' 
+    {
+      label: "Courses Enrolled",
+      value: dashboardData?.totalCourses || 0,
+      icon: <Clock className="text-yellow-600" />,
+      bg: "bg-yellow-50",
+    },
+    {
+      label: "Courses Pending",
+      value: dashboardData?.pendingCourses || 0,
+      icon: <PlayCircle className="text-blue-600" />,
+      bg: "bg-blue-50",
     },
   ];
 
   return (
     <div className="space-y-8">
+
       {/* Welcome Header */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Welcome back, Rinsha! 👋</h2>
-        <p className="text-slate-500">You have 2 live classes today and 4 lessons remaining in your current course.</p>
+        <h2 className="text-2xl font-bold text-slate-900">
+          Welcome back, {dashboardData?.studentName || "Student"} 👋
+        </h2>
+
+        <p className="text-slate-500">
+          Keep learning and complete your courses.
+        </p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
         {summaryCards.map((card, idx) => (
-          <div key={idx} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
-            <div className={`w-10 h-10 ${card.bg} rounded-xl flex items-center justify-center mb-4`}>
+
+          <div
+            key={idx}
+            className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center gap-5"
+          >
+
+            <div
+              className={`w-14 h-14 ${card.bg} rounded-2xl flex items-center justify-center shrink-0`}
+            >
               {card.icon}
             </div>
-            <p className="text-sm font-medium text-slate-500">{card.label}</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{card.value}</p>
+
+            <div>
+              <p className="text-sm font-medium text-slate-500">
+                {card.label}
+              </p>
+              <p className="text-3xl font-black text-slate-900 mt-0.5">
+                {card.value}
+              </p>
+            </div>
+
           </div>
         ))}
+
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
+
         {/* Continue Learning */}
         <div className="lg:col-span-2 space-y-6">
+
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900">Continue Learning</h3>
-            <button className="text-blue-600 text-sm font-semibold flex items-center gap-1 hover:underline">
-              View all <ChevronRight size={16} />
+
+            <h3 className="text-xl font-bold text-slate-900">
+              Your Learning Journey
+            </h3>
+
+            <button onClick={() => navigate('/student/courses')} className="text-blue-600 text-sm font-bold flex items-center gap-1 hover:underline">
+              View All Enrolled <ChevronRight size={16} />
             </button>
-          </div>
-          
-          <div className="grid sm:grid-cols-2 gap-6">
-            {continueLearning.map((course) => (
-              <div key={course.id} className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:border-blue-200 transition-all group">
-                <div className="relative aspect-video">
-                  <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white">
-                      <PlayCircle size={32} />
-                    </div>
-                  </div>
-                </div>
-                <div className="p-5 space-y-4">
-                  <div>
-                    <h4 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">{course.title}</h4>
-                    <p className="text-xs text-slate-500 mt-1">By {course.instructor}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs font-semibold">
-                      <span className="text-slate-600">{course.progress}% Completed</span>
-                      <span className="text-slate-400">{course.lessons} Lessons</span>
-                    </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-600 rounded-full" style={{ width: `${course.progress}%` }}></div>
-                    </div>
-                  </div>
-                  <button className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all active:scale-95">
-                    Continue Lesson
-                  </button>
-                </div>
-              </div>
-            ))}
+
           </div>
 
-          {/* Progress Chart Placeholder */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 mb-6">Learning Activity</h3>
-            <div className="h-48 flex items-end justify-between gap-2">
-              {[45, 60, 30, 80, 50, 90, 40].map((h, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                  <div className="w-full bg-blue-100 rounded-t-lg group-hover:bg-blue-600 transition-all relative" style={{ height: `${h}%` }}>
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap">
-                      {h} hrs
+          {/* Courses */}
+          <div className="grid sm:grid-cols-2 gap-6">
+
+            {dashboardData?.enrolledCourses?.length > 0 ? (
+              dashboardData.enrolledCourses.map((item, index) => {
+                const course = item.course || item;
+
+                return (
+                  <div
+                    key={index}
+                    className="bg-white rounded-[2rem] overflow-hidden border border-slate-200 shadow-sm hover:border-blue-300 transition-all group"
+                  >
+                    <div className="relative aspect-video">
+                      <img
+                        src={course.thumbnail || "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80"}
+                        alt={course.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                        <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white">
+                          <PlayCircle size={32} fill="currentColor" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-6 space-y-5">
+                      <div>
+                        <h4 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">
+                          {course.title}
+                        </h4>
+                        <p className="text-xs text-slate-500 font-medium mt-1">
+                          Instructor: {course.instructor?.name || "Expert"}
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-xs font-bold">
+                          <span className="text-blue-600">
+                            {item.progress || 0}% Completed
+                          </span>
+                          <span className="text-slate-400">
+                            {course.lessonsCount || course.lessons?.length || 0} Lessons
+                          </span>
+                        </div>
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                            style={{ width: `${item.progress || 0}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => navigate(`/student/player/${course._id}`)}
+                        className="w-full py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-blue-600 transition-all active:scale-95 shadow-lg shadow-slate-100"
+                      >
+                        Continue Learning
+                      </button>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-400">Day {i+1}</span>
-                </div>
-              ))}
-            </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full py-12 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-300">
+                <p className="text-slate-500 font-medium italic">You haven't enrolled in any courses yet.</p>
+                <button 
+                  onClick={() => navigate('/student/buy-courses')}
+                  className="mt-4 text-blue-600 font-bold hover:underline"
+                >
+                  Explore Courses
+                </button>
+              </div>
+            )}
+
           </div>
+
         </div>
 
-        {/* Sidebar Content */}
+        {/* Sidebar */}
         <div className="space-y-8">
-          {/* Upcoming Live Class */}
-          <div className="bg-slate-900 rounded-2xl p-6 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600 rounded-full -mr-16 -mt-16 opacity-50 blur-3xl"></div>
-            <div className="relative z-10 space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                </span>
-                <span className="text-xs font-bold uppercase tracking-widest text-blue-400">Live Now</span>
+
+          {/* Quick Stats / Info */}
+          <div className="bg-blue-600 rounded-[2rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-blue-200">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+            <div className="relative z-10 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center">
+                  <Award size={20} />
+                </div>
+                <span className="text-xs font-black uppercase tracking-[0.2em]">Learning Goal</span>
               </div>
-              <h4 className="text-lg font-bold leading-snug">Advanced Node.js Performance Optimization</h4>
-              <p className="text-sm text-slate-400">With Prof. Alan Turing</p>
-              <button className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-all">
-                Join Class
+              <div>
+                <h4 className="text-xl font-bold leading-tight">
+                  You're doing great! Keep going to earn your first certificate.
+                </h4>
+                <p className="text-blue-100 text-sm mt-3 opacity-80 leading-relaxed">
+                  Completing courses consistently improves your skill rating and visibility to recruiters.
+                </p>
+              </div>
+              <button 
+                onClick={() => navigate('/student/courses')}
+                className="w-full py-3 bg-white text-blue-600 rounded-xl font-bold text-sm hover:bg-blue-50 transition-all shadow-xl shadow-blue-900/20"
+              >
+                My Certifications
               </button>
             </div>
           </div>
 
-          {/* Recent Messages */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900">Instructor Messages</h3>
-              <button className="text-blue-600 text-xs font-bold hover:underline">View All</button>
-            </div>
-            <div className="divide-y divide-slate-50">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="p-4 flex gap-4 hover:bg-slate-50 transition-colors cursor-pointer group">
-                  <img src={`https://i.pravatar.cc/100?img=${i+20}`} alt="avatar" className="w-10 h-10 rounded-full" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                      <h5 className="text-sm font-bold text-slate-900 truncate">Instructor Name {i}</h5>
-                      <span className="text-[10px] text-slate-400 font-medium">2h ago</span>
-                    </div>
-                    <p className="text-xs text-slate-500 truncate mt-0.5">Hello Rinsha, I've reviewed your project and left some feedback...</p>
+          {/* Tips for Students */}
+          <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
+            <h3 className="font-bold text-slate-900 flex items-center gap-2">
+              <PlayCircle size={20} className="text-blue-600" />
+              Pro Tips
+            </h3>
+            <div className="space-y-5">
+              {[
+                { title: "Schedule Study Time", desc: "Set aside 30 mins daily." },
+                { title: "Take Notes", desc: "Helps in long-term retention." },
+                { title: "Practice Coding", desc: "Apply what you learn immediately." }
+              ].map((tip, i) => (
+                <div key={i} className="flex gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-blue-600 font-bold text-xs shrink-0">
+                    {i + 1}
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-slate-900">{tip.title}</h5>
+                    <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">{tip.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Review Attempts */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <h3 className="font-bold text-slate-900">Upcoming Reviews</h3>
-            <div className="space-y-3">
-              {[1, 2].map((i) => (
-                <div key={i} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-blue-600 shadow-sm">
-                      <FileText size={16} />
-                    </div>
-                    <div>
-                      <h5 className="text-xs font-bold text-slate-900">{i === 1 ? 'React Final Review' : 'UI Principles Exam'}</h5>
-                      <p className="text-[10px] text-slate-500 mt-0.5">Attempt {i}/3 • May 15, 10:00 AM</p>
-                    </div>
-                  </div>
-                  <ArrowRight size={14} className="text-slate-400" />
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
+
       </div>
+
     </div>
   );
 };

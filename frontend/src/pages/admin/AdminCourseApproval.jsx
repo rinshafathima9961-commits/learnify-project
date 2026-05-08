@@ -33,7 +33,7 @@ const coursesData = [
     price: '$59.99',
     lessons: 28,
     submittedDate: '2024-05-02',
-    thumbnail: 'https://images.unsplash.com/photo-1586717791821-3f44a563eb4c?w=400&h=250&fit=crop',
+    thumbnail: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop',
     status: 'Pending'
   },
   { 

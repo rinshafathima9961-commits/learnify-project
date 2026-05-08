@@ -1,14 +1,13 @@
-
 import { Navigate, Route, Routes } from "react-router-dom";
 import Login from "./pages/Student/auth/StudentLogin";
 import Register from "./pages/Student/auth/StudentRegister";
-import ProtectedRoute from "./components/common/ProtectedRoute";
-// import VerifyOtp from "./pages/Student/Auth/VerifyOtp";
-
-import InstructorLogin from "./pages/instructore/auth/InstructoreLogin";
-import InstructorRegister from "./pages/instructore/auth/InstructorRegister";
+import InstructorLogin from "./pages/instructor/auth/InstructorLogin";
+import InstructorRegister from "./pages/instructor/auth/InstructorRegister";
 import AdminLogin from "./pages/admin/auth/AdminLogin";
 import LandingPage from "./pages/Home/LandingPage";
+
+// Common Components
+import ProtectedRoute from "./components/common/ProtectedRoute";
 
 // Student Dashboard Imports
 import DashboardLayout from "./components/student/DashboardLayout";
@@ -16,7 +15,7 @@ import StudentDashboard from "./pages/Student/StudentDashboard";
 import StudentCourses from "./pages/Student/StudentCourses";
 import BuyCourses from "./pages/Student/BuyCourses";
 import LiveClasses from "./pages/Student/LiveClasses";
-import InstructorMessages from "./pages/Student/StudentMessage";
+import StudentMessage from "./pages/Student/StudentMessage";
 import Exams from "./pages/Student/Exams";
 import Certificates from "./pages/Student/Certificates";
 import StudentProfile from "./pages/Student/StudentProfile";
@@ -25,20 +24,21 @@ import CoursePlayer from "./pages/Student/CoursePlayer";
 import LiveRoom from "./pages/Student/LiveRoom";
 
 // Instructor Dashboard Imports
-import InstructorLayout from "./components/instructore/InstructorLayout";
-import InstructorDashboard from "./pages/instructore/InstructorDashboard";
-import InstructorProfile from "./pages/instructore/InstructorProfile";
-import MyCourses from "./pages/instructore/MyCourses";
-import CreateCourse from "./pages/instructore/CreateCourse";
-import StudentsList from "./pages/instructore/StudentsList";
-import StudentDetails from "./pages/instructore/StudentDetails";
-import InstructorReviews from "./pages/instructore/InstructorReviews";
-import InstructorLiveClasses from "./pages/instructore/InstructorLiveClasses";
-import InstructorAttendance from "./pages/instructore/InstructorAttendance";
-import InstructorOffers from "./pages/instructore/InstructorOffers";
-import InstructorPayments from "./pages/instructore/InstructorPayments";
-import InstructorEarnings from "./pages/instructore/InstructorEarnings";
-import StudentMessage from "./pages/Student/StudentMessage";
+import InstructorLayout from "./components/instructor/InstructorLayout";
+import InstructorDashboard from "./pages/instructor/InstructorDashboard";
+import InstructorProfile from "./pages/instructor/InstructorProfile";
+import MyCourses from "./pages/instructor/MyCourses";
+import CreateCourse from "./pages/instructor/CreateCourse";
+import StudentsList from "./pages/instructor/StudentsList";
+import StudentDetails from "./pages/instructor/StudentDetails";
+import InstructorReviews from "./pages/instructor/InstructorReviews";
+import InstructorLiveClasses from "./pages/instructor/InstructorLiveClasses";
+import InstructorAttendance from "./pages/instructor/InstructorAttendance";
+import InstructorOffers from "./pages/instructor/InstructorOffers";
+import InstructorPayments from "./pages/instructor/InstructorPayments";
+import InstructorEarnings from "./pages/instructor/InstructorEarnings";
+import InstructorVerification from "./pages/instructor/InstructorVerification";
+import InstructorPendingApproval from "./pages/instructor/InstructorPendingApproval";
 
 // Admin Dashboard Imports
 import AdminLayout from "./components/admin/AdminLayout";
@@ -59,27 +59,18 @@ import AdminProfile from "./pages/admin/AdminProfile";
 function App() {
   return (
     <Routes>
-      {/* Redirect */}
       <Route path="/" element={<LandingPage />} />
-      <Route path="/dashboard" element={<Navigate to="/student/dashboard" replace />} />
-
-      {/* Public Routes (Student) */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-
-      {/* Public Routes (Instructor) */}
       <Route path="/instructor/login" element={<InstructorLogin />} />
       <Route path="/instructor/register" element={<InstructorRegister />} />
-
-      {/* Public Routes (Admin) */}
       <Route path="/admin/login" element={<AdminLogin />} />
 
-
-      {/* Student Dashboard Routes */}
-      <Route
-        path="/student"
+      {/* Student Protected Routes */}
+      <Route 
+        path="/student" 
         element={
-          <ProtectedRoute allowedRoles={["student"]} loginPath="/login">
+          <ProtectedRoute allowedRoles={["student", "admin"]}>
             <DashboardLayout />
           </ProtectedRoute>
         }
@@ -94,15 +85,15 @@ function App() {
         <Route path="exams" element={<Exams />} />
         <Route path="certificates" element={<Certificates />} />
         <Route path="profile" element={<StudentProfile />} />
-        <Route path="course-details" element={<CourseDetails />} />
-        <Route path="course-player" element={<CoursePlayer />} />
+        <Route path="course-details/:id" element={<CourseDetails />} />
+        <Route path="course-player/:id" element={<CoursePlayer />} />
       </Route>
 
-      {/* Instructor Dashboard Routes */}
-      <Route
-        path="/instructor"
+      {/* Instructor Protected Routes */}
+      <Route 
+        path="/instructor" 
         element={
-          <ProtectedRoute allowedRoles={["instructor", "admin"]} loginPath="/instructor/login">
+          <ProtectedRoute allowedRoles={["instructor"]}>
             <InstructorLayout />
           </ProtectedRoute>
         }
@@ -116,18 +107,37 @@ function App() {
         <Route path="student-details" element={<StudentDetails />} />
         <Route path="reviews" element={<InstructorReviews />} />
         <Route path="live-classes" element={<InstructorLiveClasses />} />
-        <Route path="messages" element={<InstructorMessages />} />
+        <Route path="messages" element={<StudentMessage />} />
         <Route path="attendance" element={<InstructorAttendance />} />
         <Route path="offers" element={<InstructorOffers />} />
         <Route path="payments" element={<InstructorPayments />} />
         <Route path="earnings" element={<InstructorEarnings />} />
       </Route>
 
-      {/* Admin Dashboard Routes */}
-      <Route
-        path="/admin"
+      {/* Instructor Verification Route (Outside Layout but Protected) */}
+      <Route 
+        path="/instructor/verify" 
         element={
-          <ProtectedRoute allowedRoles={["admin"]} loginPath="/admin/login">
+          <ProtectedRoute allowedRoles={["instructor"]}>
+            <InstructorVerification />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/instructor/pending" 
+        element={
+          <ProtectedRoute allowedRoles={["instructor"]}>
+            <InstructorPendingApproval />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* Admin Protected Routes */}
+      <Route 
+        path="/admin" 
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
             <AdminLayout />
           </ProtectedRoute>
         }

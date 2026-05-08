@@ -3,11 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Briefcase } from "lucide-react";
-import { FcGoogle } from "react-icons/fc";
-import { FaGithub } from "react-icons/fa";
-import authIllustration from "../../../assets/auth_illustration.png";
 import { useDispatch } from "react-redux";
 import { loginUser } from "../../../features/auth/authThunk";
+import { GoogleLogin } from "@react-oauth/google";
+import axiosInstance from "../../../features/axiosInstance";
+import { setCredentials } from "../../../features/auth/authSlice";
 
 function InstructorLogin() {
   const navigate = useNavigate();
@@ -82,7 +82,7 @@ function InstructorLogin() {
             Empower learners worldwide. Manage your courses, track student progress, and grow your teaching brand.
           </p>
           <img
-            src={authIllustration}
+            src="/auth_illustration.png" // Ensure this path is correct or use the imported variable
             alt="Instructor Illustration"
             className="w-full h-auto drop-shadow-2xl rounded-2xl transform hover:scale-[1.02] transition-transform duration-500"
           />
@@ -204,15 +204,32 @@ function InstructorLogin() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <button className="flex items-center justify-center py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors font-semibold text-sm space-x-2 group">
-              <FcGoogle size={20} className="group-hover:scale-110 transition-transform" />
-              <span>Google</span>
-            </button>
-            <button className="flex items-center justify-center py-3 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors font-semibold text-sm space-x-2 group">
-              <FaGithub size={20} className="text-slate-700 group-hover:scale-110 transition-transform" />
-              <span>Github</span>
-            </button>
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={async (response) => {
+                const token = response.credential;
+                try {
+                  const res = await axiosInstance.post("/auth/google", {
+                    token,
+                    role: "instructor",
+                  });
+                  const user = res.data;
+                  if (user.role !== "instructor" && user.role !== "admin") {
+                    setApiError("Access denied. Not an instructor account.");
+                    return;
+                  }
+                  dispatch(setCredentials(user));
+                  navigate("/instructor/dashboard");
+                } catch (error) {
+                  console.log("Google login error", error);
+                  setApiError("Google authentication failed. Please try again.");
+                }
+              }}
+              onError={() => {
+                console.log("Google Login Failed");
+                setApiError("Google Login Failed");
+              }}
+            />
           </div>
 
           <div className="text-center mt-10">

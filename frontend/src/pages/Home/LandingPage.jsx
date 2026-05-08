@@ -18,6 +18,7 @@ import {
   GraduationCap
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { getAllCourses } from '../../services/courseService';
 
 const LandingPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -72,41 +73,22 @@ const LandingPage = () => {
     },
   ];
 
-  const featuredCourses = [
-    {
-      id: 1,
-      title: 'Complete Web Development Bootcamp',
-      instructor: 'Dr. Angela Yu',
-      rating: 4.9,
-      students: '12.5k',
-      duration: '45h 30m',
-      level: 'Beginner',
-      price: '₹2,499',
-      image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      id: 2,
-      title: 'Advanced UI/UX Design Masterclass',
-      instructor: 'Michael Scott',
-      rating: 4.8,
-      students: '8.2k',
-      duration: '32h 15m',
-      level: 'Intermediate',
-      price: '₹1,899',
-      image: 'https://images.unsplash.com/photo-1586717791821-3f44a563eb4c?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      id: 3,
-      title: 'Data Science & Machine Learning',
-      instructor: 'Sarah Jenkins',
-      rating: 4.7,
-      students: '15k',
-      duration: '58h 00m',
-      level: 'Advanced',
-      price: '₹3,299',
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80',
-    },
-  ];
+  const [featuredCourses, setFeaturedCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const data = await getAllCourses({ limit: 3, status: 'published' });
+        setFeaturedCourses(data || []);
+      } catch (error) {
+        console.error('Error fetching landing courses:', error);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+    fetchCourses();
+  }, []);
 
   const testimonials = [
     {
@@ -146,7 +128,6 @@ const LandingPage = () => {
             <a href="#courses" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Courses</a>
             <a href="#mentors" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Mentors</a>
             <a href="#about" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">About Us</a>
-            <a href="#contact" className="text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors">Contact</a>
           </div>
 
           <div className="hidden md:flex items-center gap-4">
@@ -189,13 +170,6 @@ const LandingPage = () => {
       <section className="pt-32 pb-20 md:pt-48 md:pb-32 bg-gradient-to-b from-slate-50 to-white overflow-hidden">
         <div className="container mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
           <div className="space-y-8 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-sm font-semibold">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
-              </span>
-              Over 25k+ active learners joined this week
-            </div>
             <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 leading-[1.1]">
               Unlock Your Potential with <span className="text-blue-600">Expert-Led</span> Learning.
             </h1>
@@ -285,87 +259,54 @@ const LandingPage = () => {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            {featuredCourses.map((course) => (
-              <div key={course.id} className="bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-300 hover:shadow-2xl transition-all group">
+            {loadingCourses ? (
+              [1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-2xl h-96 animate-pulse border border-slate-100"></div>
+              ))
+            ) : featuredCourses.length > 0 ? featuredCourses.map((course) => (
+              <div key={course._id} className="bg-white rounded-2xl overflow-hidden border border-slate-200 hover:border-blue-300 hover:shadow-2xl transition-all group">
                 <div className="relative aspect-video overflow-hidden">
-                  <img src={course.image} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-lg text-xs font-bold text-slate-900 shadow-sm uppercase tracking-wider">
-                    {course.level}
+                    {course.category}
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
                   <div className="flex items-center gap-2">
                     <div className="flex items-center text-yellow-400">
                       <Star className="w-4 h-4 fill-current" />
-                      <span className="ml-1 text-slate-900 font-bold text-sm">{course.rating}</span>
+                      <span className="ml-1 text-slate-900 font-bold text-sm">4.9</span>
                     </div>
-                    <span className="text-slate-400 text-sm">({course.students} students)</span>
+                    <span className="text-slate-400 text-sm">({course.enrolledCount || 0} students)</span>
                   </div>
                   <h4 className="text-xl font-bold text-slate-900 leading-tight hover:text-blue-600 cursor-pointer transition-colors line-clamp-2 h-14">
                     {course.title}
                   </h4>
-                  <p className="text-slate-500 text-sm font-medium">By <span className="text-slate-900">{course.instructor}</span></p>
+                  <p className="text-slate-500 text-sm font-medium">By <span className="text-slate-900">{course.instructor?.name || 'Expert Instructor'}</span></p>
                   <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                     <div className="flex items-center gap-4 text-slate-500 text-sm">
                       <div className="flex items-center gap-1.5">
                         <Clock className="w-4 h-4" />
-                        {course.duration}
+                        {course.lessonsCount || course.lessons?.length || 0} Lessons
                       </div>
                     </div>
-                    <div className="text-2xl font-black text-blue-600">{course.price}</div>
+                    <div className="text-2xl font-black text-blue-600">₹{course.price}</div>
                   </div>
-                  <button className="w-full py-3 bg-slate-50 text-slate-900 font-bold rounded-xl hover:bg-blue-600 hover:text-white transition-all active:scale-[0.98]">
+                  <button onClick={() => navigate(`/course-details/${course._id}`)} className="w-full py-3 bg-slate-50 text-slate-900 font-bold rounded-xl hover:bg-blue-600 hover:text-white transition-all active:scale-[0.98]">
                     Enroll Now
                   </button>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-slate-500 italic">No courses published yet.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Dual CTA Section */}
-      <section className="py-24 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Student CTA */}
-            <div className="relative overflow-hidden rounded-3xl bg-blue-600 p-10 md:p-16 text-white group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full -mr-20 -mt-20 opacity-50 blur-3xl"></div>
-              <div className="relative z-10 space-y-6">
-                <GraduationCap className="w-16 h-16 text-blue-200" />
-                <h3 className="text-3xl md:text-4xl font-extrabold">Become a Student</h3>
-                <p className="text-blue-100 text-lg leading-relaxed max-w-md">
-                  Join millions of people from around the world learning together. Online learning is as easy and natural as chatting.
-                </p>
-                <button 
-                  onClick={() => navigate('/register')}
-                  className="px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg hover:bg-blue-50 shadow-xl transition-all active:scale-95"
-                >
-                  Apply as Student
-                </button>
-              </div>
-            </div>
 
-            {/* Instructor CTA */}
-            <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-10 md:p-16 text-white group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-slate-800 rounded-full -mr-20 -mt-20 opacity-50 blur-3xl"></div>
-              <div className="relative z-10 space-y-6">
-                <Users className="w-16 h-16 text-slate-400" />
-                <h3 className="text-3xl md:text-4xl font-extrabold">Become an Instructor</h3>
-                <p className="text-slate-400 text-lg leading-relaxed max-w-md">
-                  Instructors from around the world teach millions of students on Learnify. We provide the tools and skills to teach what you love.
-                </p>
-                <button 
-                  onClick={() => navigate('/instructor/register')}
-                  className="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold text-lg hover:bg-blue-700 shadow-xl shadow-blue-900/20 transition-all active:scale-95"
-                >
-                  Apply as Instructor
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Upcoming Live Classes */}
       <section className="py-24 bg-slate-50">

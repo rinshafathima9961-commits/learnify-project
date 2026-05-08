@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { 
   LayoutDashboard, 
-  User, 
+  User as UserIcon, 
   BookOpen, 
   PlusCircle, 
   Users, 
@@ -17,18 +18,20 @@ import {
   Menu,
   X,
   Search,
-  Bell,
-  ChevronRight
+  Bell
 } from 'lucide-react';
+import { logout } from '../../features/auth/authSlice';
 
 const InstructorLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
 
   const menuItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/instructor/dashboard' },
-    { name: 'My Profile', icon: <User size={20} />, path: '/instructor/profile' },
+    { name: 'My Profile', icon: <UserIcon size={20} />, path: '/instructor/profile' },
     { name: 'My Courses', icon: <BookOpen size={20} />, path: '/instructor/courses' },
     { name: 'Add Course', icon: <PlusCircle size={20} />, path: '/instructor/add-course' },
     { name: 'Students', icon: <Users size={20} />, path: '/instructor/students' },
@@ -42,9 +45,20 @@ const InstructorLayout = () => {
   ];
 
   const getPageTitle = () => {
-    const item = menuItems.find(item => item.path === location.pathname);
+    const item = menuItems.find(item => item.path === location.pathname || location.pathname.startsWith(item.path));
     return item ? item.name : 'Instructor Panel';
   };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/instructor/login');
+  };
+
+  const DefaultAvatar = () => (
+    <div className="w-full h-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+      <UserIcon size={20} />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -84,7 +98,7 @@ const InstructorLayout = () => {
           {/* Logout */}
           <div className="p-4 border-t border-slate-100">
             <button 
-              onClick={() => navigate('/instructor/login')}
+              onClick={handleLogout}
               className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all"
             >
               <LogOut size={20} />
@@ -117,12 +131,12 @@ const InstructorLayout = () => {
               <input
                 type="text"
                 placeholder="Search students, courses..."
-                className="w-full pl-12 pr-4 py-3 bg-slate-100 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full pl-12 pr-4 py-3 bg-slate-100 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 transition-all outline-none"
               />
             </div>
 
             {/* Notifications */}
-            <button className="p-2.5 text-slate-500 hover:bg-slate-100 rounded-2xl relative border border-slate-100">
+            <button className="p-2.5 text-slate-500 hover:bg-slate-100 rounded-2xl relative border border-slate-100 transition-all">
               <Bell size={22} />
               <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
             </button>
@@ -130,11 +144,17 @@ const InstructorLayout = () => {
             {/* Instructor Profile */}
             <div className="flex items-center gap-4 pl-6 border-l border-slate-200">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-black text-slate-900 leading-none">Dr. Alan Turing</p>
-                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">Verified Instructor</p>
+                <p className="text-sm font-black text-slate-900 leading-none">{user?.name || 'Instructor'}</p>
+                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">
+                  {user?.approvalStatus === 'approved' ? 'Verified Instructor' : 'Pending Approval'}
+                </p>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-md overflow-hidden cursor-pointer hover:scale-105 transition-transform">
-                <img src="https://i.pravatar.cc/150?u=instructor" alt="avatar" />
+              <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 font-bold border-2 border-white shadow-md overflow-hidden cursor-pointer hover:scale-105 transition-all">
+                {user?.profileImage ? (
+                  <img src={user.profileImage} alt="profile" className="w-full h-full object-cover" />
+                ) : (
+                  <DefaultAvatar />
+                )}
               </div>
             </div>
           </div>

@@ -9,53 +9,15 @@ import {
   Clock, 
   Video,
   BookOpen,
-  Calendar
+  Calendar,
+  Users
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const StudentsList = () => {
   const navigate = useNavigate();
-  const students = [
-    {
-      id: 1,
-      name: 'Rinsha Fathima',
-      email: 'rinshafathima9961@gmail.com',
-      avatar: 'https://i.pravatar.cc/150?u=rinsha',
-      courseName: 'Advanced React 19 Patterns',
-      purchaseDate: 'May 01, 2026',
-      progress: 85,
-      completedLessons: 42,
-      totalLessons: 50,
-      reviewStatus: 'Pending',
-      liveAttendance: '92%',
-    },
-    {
-      id: 2,
-      name: 'Mohammed Ihsan',
-      email: 'ihsan.dev@gmail.com',
-      avatar: 'https://i.pravatar.cc/150?u=ihsan',
-      courseName: 'Advanced React 19 Patterns',
-      purchaseDate: 'April 28, 2026',
-      progress: 32,
-      completedLessons: 15,
-      totalLessons: 50,
-      reviewStatus: 'Not Started',
-      liveAttendance: '65%',
-    },
-    {
-      id: 3,
-      name: 'Priya Sharma',
-      email: 'priya.s@gmail.com',
-      avatar: 'https://i.pravatar.cc/150?u=priya',
-      courseName: 'Node.js Microservices',
-      purchaseDate: 'May 05, 2026',
-      progress: 10,
-      completedLessons: 3,
-      totalLessons: 32,
-      reviewStatus: 'Not Started',
-      liveAttendance: '100%',
-    }
-  ];
+  const [students, setStudents] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
 
   return (
     <div className="space-y-10 pb-20">
@@ -117,7 +79,7 @@ const StudentsList = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {students.map((student) => (
+              {students.length > 0 ? students.map((student) => (
                 <tr 
                   key={student.id} 
                   className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
@@ -188,12 +150,26 @@ const StudentsList = () => {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan="6" className="px-8 py-20 text-center">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300">
+                        <Users size={32} />
+                      </div>
+                      <div>
+                        <p className="text-slate-900 font-bold">No students found</p>
+                        <p className="text-slate-500 text-sm">Once students enroll in your courses, they will appear here.</p>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
         <div className="p-6 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Showing 3 of 2,845 students</p>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Showing {students.length} students</p>
           <div className="flex gap-2">
             <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-400 cursor-not-allowed">Previous</button>
             <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm">Next</button>

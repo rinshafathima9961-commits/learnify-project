@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   GraduationCap, 
@@ -9,7 +9,9 @@ import {
   UserX, 
   AlertCircle,
   MoreVertical,
-  ArrowRight
+  ArrowRight,
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -22,6 +24,8 @@ import {
 } from 'recharts';
 import StatCard from '../../components/admin/StatCard';
 import StatusBadge from '../../components/admin/StatusBadge';
+import adminService from '../../services/adminService';
+import { Link } from 'react-router-dom';
 
 const data = [
   { name: 'Jan', revenue: 4000 },
@@ -34,19 +38,69 @@ const data = [
 ];
 
 const AdminDashboard = () => {
+  const [stats, setStats] = useState({
+    totalStudents: 0,
+    totalInstructors: 0,
+    totalCourses: 0,
+    pendingApprovals: 0,
+  });
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const [users, courses, pendingReqs] = await Promise.all([
+          adminService.getAllUsers(),
+          adminService.getAllUsers(), // Assuming we might have a courses API or use generic
+          adminService.getInstructorRequests()
+        ]);
+
+        // Just fetching users and courses to get counts
+        // Note: For now we count from the users array
+        const students = users.filter(u => u.role === 'student').length;
+        const instructors = users.filter(u => u.role === 'instructor').length;
+        
+        setStats({
+          totalStudents: students,
+          totalInstructors: instructors,
+          totalCourses: 0, // Placeholder until courses service is fully ready
+          pendingApprovals: pendingReqs.length,
+        });
+        setRequests(pendingReqs.slice(0, 5)); // Show latest 5
+      } catch (error) {
+        console.error('Failed to fetch dashboard data', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+        <p className="text-slate-500 font-medium">Loading platform overview...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-20">
       {/* Welcome Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Dashboard Overview</h2>
-          <p className="text-slate-500">Welcome back! Here's what's happening on Learnify today.</p>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Dashboard Overview</h2>
+          <p className="text-slate-500 font-medium">Welcome back! Here's what's happening on Learnify today.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
+          <button className="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-95">
             Download Report
           </button>
-          <button className="px-4 py-2 bg-blue-600 rounded-xl text-sm font-semibold text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-900/20">
+          <button className="px-6 py-3 bg-blue-600 rounded-2xl text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 active:scale-95">
             Platform Settings
           </button>
         </div>
@@ -54,28 +108,26 @@ const AdminDashboard = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Students" value="12,450" icon={Users} trend={12} color="blue" />
-        <StatCard title="Total Instructors" value="842" icon={GraduationCap} trend={5} color="purple" />
-        <StatCard title="Total Courses" value="1,205" icon={BookOpen} trend={8} color="green" />
-        <StatCard title="Pending Approvals" value="48" icon={Clock} color="amber" />
-        <StatCard title="Active Live Classes" value="12" icon={Video} color="cyan" />
-        <StatCard title="Total Revenue" value="$84,200" icon={DollarSign} trend={15} color="green" />
-        <StatCard title="Pending Payouts" value="$12,500" icon={AlertCircle} color="amber" />
-        <StatCard title="Blocked Users" value="154" icon={UserX} color="red" />
+        <StatCard title="Total Students" value={stats.totalStudents.toLocaleString()} icon={Users} color="blue" />
+        <StatCard title="Total Instructors" value={stats.totalInstructors.toLocaleString()} icon={GraduationCap} color="purple" />
+        <StatCard title="Pending Approvals" value={stats.pendingApprovals} icon={Clock} color="amber" />
+        <StatCard title="Total Revenue" value="₹0" icon={DollarSign} color="green" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Revenue Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-lg font-bold text-slate-900">Revenue Overview</h3>
-            <select className="bg-slate-50 border-none text-sm font-medium text-slate-600 rounded-lg focus:ring-0">
+        <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <h3 className="text-xl font-black text-slate-900">Revenue Overview</h3>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Real-time earnings tracking</p>
+            </div>
+            <select className="bg-slate-50 border-none text-xs font-black uppercase tracking-widest text-slate-500 rounded-xl focus:ring-0 px-4 py-2 cursor-pointer">
               <option>Last 7 Days</option>
               <option>Last 30 Days</option>
-              <option>Last 12 Months</option>
             </select>
           </div>
-          <div className="h-[350px] w-full min-h-[350px]">
+          <div className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%" >
               <AreaChart data={data}>
                 <defs>
@@ -85,62 +137,41 @@ const AdminDashboard = () => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: '#64748b', fontSize: 12}}
-                  dy={10}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: '#64748b', fontSize: 12}}
-                  tickFormatter={(value) => `$${value}`}
-                />
-                <Tooltip 
-                  contentStyle={{backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#2563eb" 
-                  strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorRevenue)" 
-                />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 700}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10, fontWeight: 700}} />
+                <Tooltip contentStyle={{backgroundColor: '#fff', borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)'}} />
+                <Area type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={4} fillOpacity={1} fill="url(#colorRevenue)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Latest Activity Feed */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-slate-900">Activity Feed</h3>
-            <button className="text-blue-600 hover:text-blue-700 text-sm font-semibold">View All</button>
+        {/* Latest Activity Feed (Mocked but styled) */}
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-xl font-black text-slate-900">Activity Feed</h3>
+            <button className="text-blue-600 hover:text-blue-700 text-xs font-black uppercase tracking-widest">View All</button>
           </div>
-          <div className="space-y-6">
+          <div className="space-y-8">
             {[
               { user: 'Sarah Jenkins', action: 'applied as instructor', time: '2 mins ago', type: 'instructor' },
-              { user: 'Web Development Bootcamp', action: 'submitted for approval', time: '15 mins ago', type: 'course' },
-              { user: 'Mark Thompson', action: 'purchased Advanced React', time: '1 hour ago', type: 'payment' },
-              { user: 'Live Class: UX Design', action: 'started now', time: 'Just now', type: 'live' },
-              { user: 'System Update', action: 'completed successfully', time: '4 hours ago', type: 'system' },
+              { user: 'Web Development', action: 'submitted for approval', time: '15 mins ago', type: 'course' },
+              { user: 'Mark Thompson', action: 'purchased React 19', time: '1 hour ago', type: 'payment' },
+              { user: 'System Update', action: 'completed', time: '4 hours ago', type: 'system' },
             ].map((activity, i) => (
-              <div key={i} className="flex gap-4">
-                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
-                  <div className={`w-2 h-2 rounded-full ${
-                    activity.type === 'instructor' ? 'bg-purple-500' :
-                    activity.type === 'course' ? 'bg-amber-500' :
-                    activity.type === 'payment' ? 'bg-green-500' : 'bg-blue-500'
-                  }`}></div>
+              <div key={i} className="flex gap-5">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                  activity.type === 'instructor' ? 'bg-purple-50 text-purple-600' :
+                  activity.type === 'course' ? 'bg-amber-50 text-amber-600' :
+                  activity.type === 'payment' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
+                }`}>
+                   <CheckCircle2 size={20} />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">
-                    <span className="font-bold">{activity.user}</span> {activity.action}
+                  <p className="text-sm font-bold text-slate-900">
+                    <span className="text-blue-600">{activity.user}</span> {activity.action}
                   </p>
-                  <p className="text-xs text-slate-500">{activity.time}</p>
+                  <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-tighter">{activity.time}</p>
                 </div>
               </div>
             ))}
@@ -148,95 +179,67 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Instructor Requests */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900">Instructor Requests</h3>
-            <button className="p-2 hover:bg-slate-50 rounded-lg"><MoreVertical className="w-5 h-5 text-slate-400" /></button>
+      {/* Instructor Requests Table */}
+      <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-black text-slate-900">Pending Instructor Requests</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Review and approve new teaching talent</p>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50/50">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Instructor</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Qualification</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {[
-                  { name: 'Dr. Emily Watson', email: 'emily@example.com', qualification: 'PhD Computer Science', status: 'Pending' },
-                  { name: 'John Doe', email: 'john@example.com', qualification: 'Senior Dev at Google', status: 'Pending' },
-                  { name: 'Alice Smith', email: 'alice@example.com', qualification: 'UX Designer (8+ yrs)', status: 'Pending' },
-                ].map((req, i) => (
-                  <tr key={i} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="text-sm font-bold text-slate-900">{req.name}</p>
-                        <p className="text-xs text-slate-500">{req.email}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{req.qualification}</td>
-                    <td className="px-6 py-4"><StatusBadge status={req.status} /></td>
-                    <td className="px-6 py-4">
-                      <button className="text-blue-600 hover:text-blue-700 font-semibold text-sm">Review</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
-            <button className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">
-              View All Applications <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+          <Link to="/admin/instructors" className="p-3 hover:bg-slate-50 rounded-2xl transition-all border border-slate-100">
+            <MoreVertical size={20} className="text-slate-400" />
+          </Link>
         </div>
-
-        {/* Latest Payments */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900">Latest Payments</h3>
-            <button className="p-2 hover:bg-slate-50 rounded-lg"><MoreVertical className="w-5 h-5 text-slate-400" /></button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50/50">
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Transaction</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {[
-                  { id: 'TRX-9482', course: 'React Masterclass', amount: '$49.99', status: 'Success', date: '2 mins ago' },
-                  { id: 'TRX-9481', course: 'UI Design Fundamentals', amount: '$29.99', status: 'Success', date: '15 mins ago' },
-                  { id: 'TRX-9480', course: 'Python for Data Science', amount: '$79.99', status: 'Pending', date: '1 hour ago' },
-                ].map((pay, i) => (
-                  <tr key={i} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="text-sm font-bold text-slate-900">{pay.course}</p>
-                        <p className="text-xs text-slate-500">ID: {pay.id}</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50/50">
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Instructor</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Expertise</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Status</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {requests.map((req, i) => (
+                <tr key={req._id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                        {req.name.charAt(0)}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-900">{pay.amount}</td>
-                    <td className="px-6 py-4"><StatusBadge status={pay.status} /></td>
-                    <td className="px-6 py-4 text-xs text-slate-500">{pay.date}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="p-4 bg-slate-50 border-t border-slate-100 text-center">
-            <button className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">
-              View All Transactions <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+                      <div>
+                        <p className="text-sm font-black text-slate-900">{req.name}</p>
+                        <p className="text-xs text-slate-400 font-medium">{req.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <p className="text-sm font-bold text-slate-700">{req.verificationDetails?.expertise || 'N/A'}</p>
+                    <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">{req.verificationDetails?.education}</p>
+                  </td>
+                  <td className="px-8 py-6">
+                    <StatusBadge status="Pending" />
+                  </td>
+                  <td className="px-8 py-6">
+                    <Link to="/admin/instructors" className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs hover:bg-blue-600 hover:text-white transition-all">
+                      Review Application
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+              {requests.length === 0 && (
+                <tr>
+                  <td colSpan="4" className="px-8 py-10 text-center text-slate-400 font-medium">No pending requests at the moment.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="p-6 bg-slate-50 border-t border-slate-100 text-center">
+          <Link to="/admin/instructors" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 transition-all">
+            Manage All Instructors <ArrowRight size={14} />
+          </Link>
         </div>
       </div>
     </div>

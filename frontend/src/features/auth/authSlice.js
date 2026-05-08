@@ -4,6 +4,8 @@ import {
   loginUser,
   verifyOtp,
   resendOtp,
+  fetchProfile,
+  updateProfile,
 } from "./authThunk";
 
 const initialState = {
@@ -38,14 +40,19 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-
       // REGISTER
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
       })
-      .addCase(registerUser.fulfilled, (state) => {
+      .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.otpSent = true;
+        state.user = action.payload;
+        state.success = true;
+        state.otpSent = false;
+        if (action.payload?.token) {
+          localStorage.setItem("token", action.payload.token);
+        }
+        localStorage.setItem("user", JSON.stringify(action.payload));
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
@@ -66,6 +73,33 @@ const authSlice = createSlice({
         state.error = action.payload;
       })
 
+      // FETCH PROFILE
+      .addCase(fetchProfile.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+      })
+      .addCase(fetchProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // UPDATE PROFILE
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+        state.success = true;
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
       // VERIFY OTP
       .addCase(verifyOtp.pending, (state) => {
         state.loading = true;
@@ -78,22 +112,10 @@ const authSlice = createSlice({
       .addCase(verifyOtp.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      })
-
-      // RESEND OTP
-      .addCase(resendOtp.pending, (state) => {
-        state.loading = true;
-      })
-      .addCase(resendOtp.fulfilled, (state) => {
-        state.loading = false;
-        state.otpSent = true;
-      })
-      .addCase(resendOtp.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
       });
   },
 });
 
 export const { logout, setCredentials, clearState } = authSlice.actions;
+export { registerUser, loginUser, verifyOtp, resendOtp, fetchProfile, updateProfile };
 export default authSlice.reducer;

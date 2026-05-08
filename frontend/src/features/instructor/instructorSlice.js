@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { fetchStudentDashboard } from "./studentThunk";
+import { fetchInstructorDashboard } from "./instructorThunk";
 
 const initialState = {
   dashboardData: null,
@@ -7,31 +7,31 @@ const initialState = {
   error: null,
 };
 
-const studentSlice = createSlice({
-  name: "student",
+const instructorSlice = createSlice({
+  name: "instructor",
   initialState,
   reducers: {
-    clearStudentState: (state) => {
+    clearInstructorState: (state) => {
       state.dashboardData = null;
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchStudentDashboard.pending, (state) => {
+      .addCase(fetchInstructorDashboard.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchStudentDashboard.fulfilled, (state, action) => {
+      .addCase(fetchInstructorDashboard.fulfilled, (state, action) => {
         state.loading = false;
         state.dashboardData = action.payload;
       })
-      .addCase(fetchStudentDashboard.rejected, (state, action) => {
+      .addCase(fetchInstructorDashboard.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
   },
 });
 
-export const { clearStudentState } = studentSlice.actions;
-export default studentSlice.reducer;
+export const { clearInstructorState } = instructorSlice.actions;
+export default instructorSlice.reducer;
